@@ -118,24 +118,78 @@ All cross-terms vanish to zero due to mutual orthogonality.
 make
 ```
 
-### Run Simulation
+### 1) Multi-Terminal Mode (Coordinator & Stations in Separate Terminals)
+
+Open separate terminal sessions in the project directory.
+
+#### Terminal 1: Start the Coordinator / Channel
 ```bash
-./cdma_udp_sim <stations> <slots> [p]
+./cdma_udp_sim coordinator <num_stations>
+```
+*Example (for 2 stations):*
+```bash
+./cdma_udp_sim coordinator 2
 ```
 
+#### Terminal 2: Start Station 0
+```bash
+./cdma_udp_sim station 0 <num_stations> [destination]
+```
+*Example:*
+```bash
+./cdma_udp_sim station 0 2 1
+```
+
+#### Terminal 3: Start Station 1
+```bash
+./cdma_udp_sim station 1 <num_stations> [destination]
+```
+*Example:*
+```bash
+./cdma_udp_sim station 1 2 0
+```
+
+- Each station terminal prompts at startup whether to display the **bit-wise Walsh encoded code** for each block.
+- **Commands & Usage in Station Terminal**:
+  - `<message>`: Transmit payload message to current default destination station.
+  - `<dest_id> <message>`: Directly send payload to a specific destination station (e.g., `2 Hello`).
+  - `<dest_id>`: Enter target destination station ID alone; station will prompt for payload.
+  - `dest <dest_id>`: Change the current default destination to `<dest_id>`.
+  - `walsh` / `toggle`: Toggle bit-wise Walsh encoding display on/off dynamically.
+  - `exit` / `quit` / `q`: Exit station process.
+- **Display on Destination Terminal**:
+  - Received frames display full sender identification, destination ID, sequence number, payload text, message length, and verified CRC-32 checksum.
+- **Lifecycle Management**:
+  - The coordinator stays active continuously across slots and only stops when `Ctrl+C` is pressed or when all station processes have exited.
+
+---
+
+### 2) Single-Terminal Mode (All-in-One Console)
+Run without subcommands to launch the coordinator and auto-fork all station processes in one terminal:
+```bash
+./cdma_udp_sim [stations]
+```
+*Example:*
+```bash
+./cdma_udp_sim 4
+```
+
+- **Commands**:
+  - `Hello CDMA`: Sends payload from Station 0 to Station 1.
+  - `<src> <dst> <message>`: Sends payload from Station `<src>` to Station `<dst>` (e.g., `1 2 Secret msg`).
+  - `all <message>`: Demonstrates CDMA multiple access by transmitting from all stations concurrently in the same slot.
+  - `walsh` / `toggle`: Toggles bit-wise Walsh encoding display on/off dynamically.
+  - `exit` / `quit` / `q`: Clean shutdown.
+
+---
+
+### 3) Batch Simulation Mode (Experiments)
+```bash
+./cdma_udp_sim <stations> <slots> [p] --batch
+```
 - `<stations>`: Number of participating stations ($2 \le N \le 50$).
 - `<slots>`: Number of simulation slots (e.g., $50, 100, 1000$).
 - `[p]`: Optional transmission probability / load ($0.0 \le p \le 1.0$, default is `1.0` for saturated traffic).
-
-### Example: Saturated Load ($p = 1.0$)
-```bash
-./cdma_udp_sim 4 10 1.0
-```
-
-### Example: Probabilistic Traffic ($p = 0.5$)
-```bash
-./cdma_udp_sim 5 50 0.5
-```
 
 ---
 

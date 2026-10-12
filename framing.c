@@ -77,10 +77,10 @@ int DeserializeFrame(uint8_t *buffer, size_t buffer_size, frame_t *frame)
     if (buffer_size != expected_size)
         return 0;
 
-    /* Allocate payload. */
-    frame->payload.data = malloc(payload_length);
+    /* Allocate payload with space for null terminator. */
+    frame->payload.data = calloc(payload_length + 1, 1);
     if (frame->payload.data == NULL) {
-        perror("malloc");
+        perror("calloc");
         return 0;
     }
 
@@ -198,6 +198,63 @@ frame_t *create_test_frame(int source, int destination, uint8_t sequence_no)
 
     memcpy(crc_buffer, &frame->header, sizeof(header_t));
     memcpy(crc_buffer + sizeof(header_t), frame->payload.data, MAX_PAYLOAD_LENGTH);
+
+    uint32_t crc = crc32(crc_buffer, crc_length);
+    free(crc_buffer);
+
+    frame->trailer.fcs = htonl(crc);
+
+    return frame;
+}
+
+/* ---------------------------------------------------------
+ * create_payload_frame
+ * --------------------------------------------------------- */
+
+frame_t *create_payload_frame(int source, int destination, uint8_t sequence_no,
+                              const uint8_t *payload, size_t payload_len)
+{
+    frame_t *frame = calloc(1, sizeof(frame_t));
+    if (frame == NULL) {
+        perror("calloc");
+        return NULL;
+    }
+
+    frame->header.source_id = (uint8_t)source;
+    frame->header.dest_id = (uint8_t)destination;
+    frame->header.seqNo = sequence_no;
+
+    /* Ethernet-style minimum payload length (46 bytes) */
+    size_t actual_length = (payload_len < MIN_PAYLOAD_LENGTH) ? MIN_PAYLOAD_LENGTH : payload_len;
+    if (actual_length > MAX_PAYLOAD_LENGTH)
+        actual_length = MAX_PAYLOAD_LENGTH;
+
+    frame->header.payload_length = htons((uint16_t)actual_length);
+
+    frame->payload.data = calloc(actual_length + 1, 1);
+    if (frame->payload.data == NULL) {
+        perror("calloc");
+        free(frame);
+        return NULL;
+    }
+
+    if (payload && payload_len > 0) {
+        size_t copy_bytes = (payload_len > actual_length) ? actual_length : payload_len;
+        memcpy(frame->payload.data, payload, copy_bytes);
+    }
+
+    /* Calculate CRC over header + payload */
+    size_t crc_length = sizeof(header_t) + actual_length;
+    uint8_t *crc_buffer = malloc(crc_length);
+    if (crc_buffer == NULL) {
+        perror("malloc");
+        free(frame->payload.data);
+        free(frame);
+        return NULL;
+    }
+
+    memcpy(crc_buffer, &frame->header, sizeof(header_t));
+    memcpy(crc_buffer + sizeof(header_t), frame->payload.data, actual_length);
 
     uint32_t crc = crc32(crc_buffer, crc_length);
     free(crc_buffer);

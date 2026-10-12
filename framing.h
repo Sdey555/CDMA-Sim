@@ -38,6 +38,12 @@ int Framing(frame_t *frame, int source, int dest, uint8_t sequence_no, FILE *inp
 frame_t *create_test_frame(int source, int destination, uint8_t sequence_no);
 
 /*
+ * Create a frame with actual payload data from terminal or buffer.
+ */
+frame_t *create_payload_frame(int source, int destination, uint8_t sequence_no,
+                              const uint8_t *payload, size_t payload_len);
+
+/*
  * Free dynamically allocated frame memory.
  */
 void free_frame(frame_t *frame);

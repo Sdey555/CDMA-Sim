@@ -29,26 +29,21 @@ This project replaces the contention-based CSMA protocols from Assignment 3 with
 ## 2. Architecture & Communication Flow
 
 ```mermaid
-## 2. Architecture & Communication Flow
-
-```mermaid
 flowchart TB
     M["main.c - Simulation Coordinator"]
     U["udp.c / udp.h - UDP Socket Layer"]
-    CH["channel.c - CDMA Channel Coordinator"]
-    CD["cdma.c / cdma.h - Walsh Matrix and Code Logic"]
+    CH["CDMA Channel Coordinator"]
+    CD["cdma.c - Walsh Encoding and Decoding"]
+    W["walsh.c - Walsh Code Definitions"]
     ST["station.c - Independent Station Processes"]
-    FR["framing.c / framing.h - Frame Handling"]
-    CRC["calc_crc.c / calc_crc.h - CRC Error Detection"]
+    FR["framing.c - Frame Handling"]
 
     M --> U
     U <--> CH
     CH <--> CD
-    CD <--> ST
+    CD --> W
+    ST <--> U
     ST --> FR
-    FR --> CRC
-```
-
 ```
 
 ### Communication Sequence per Slot:
